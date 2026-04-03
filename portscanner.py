@@ -3,10 +3,11 @@
 import argparse
 import socket
 import sys
-from scanner.utils import parse_ports, print_banner
+from scanner.utils import parse_ports, print_banner, format_result
+from scanner.tcp import scan_ports
+
 
 def resolve_target(target: str) -> str:
-    """Resolves hostname to IP address."""
     try:
         ip = socket.gethostbyname(target)
         return ip
@@ -52,8 +53,23 @@ def main():
     print(f"  Timeout: {args.timeout}s")
     print("-" * 40)
 
-    # Scanning logic will plug in here in Stage 2
-    print("[*] Scanner logic coming in Stage 2...")
+    print("[*] Starting TCP scan...\n")
+    open_ports = scan_ports(target_ip, ports, args.threads, args.timeout, args.verbose)
+
+    # Summary
+    print("\n" + "-" * 40)
+    print(f"[+] Scan complete. {len(open_ports)} open port(s) found:\n")
+    for port in open_ports:
+        print(format_result(port, "OPEN"))
+
+    # Save to file if requested
+    if args.output:
+        with open(args.output, "w") as f:
+            f.write(f"Scan results for {args.target} ({target_ip})\n")
+            f.write("-" * 40 + "\n")
+            for port in open_ports:
+                f.write(f"{port} OPEN\n")
+        print(f"\n[+] Results saved to {args.output}")
 
 
 if __name__ == "__main__":
